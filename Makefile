@@ -12,7 +12,7 @@ rebuild: clean all
 
 # Building the server and tty-share
 $(TTY_SERVER): $(TTY_SERVER_SRC)
-	go build -o $@
+	go build -a -o $@
 
 assets_bundle.go: $(TTY_SERVER_ASSETS)
 	go get github.com/go-bindata/go-bindata/...

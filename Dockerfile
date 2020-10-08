@@ -1,26 +1,24 @@
-FROM alpine:3.11
+FROM golang:alpine as builder
 
-ENV URL=http://localhost:5000
-
-ARG build_deps="go make dep"
-ARG runtime_deps="dumb-init"
-ARG user_id=1000
+ARG build_deps="make dep npm git"
 
 COPY . /go/src/github.com/elisescu/tty-server
 
 RUN apk update && \
-    apk add -u $build_deps $runtime_deps && \
-    adduser -D -H -h / -u $user_id tty-server && \
+    apk add -u $build_deps && \
     cd /go/src/github.com/elisescu/tty-server && \
     GOPATH=/go dep ensure && \
-    GOPATH=/go make all && \
-    cp tty-server /usr/bin/ && \
-    rm -r /go && \
-    apk del $build_deps
+    GOPATH=/go CGO_ENABLED=0 GOOS=linux make all
+    
+
+FROM scratch as base
+
+ENV TTY_SERVER_URL=http://localhost:5000
+
+COPY --from=builder /go/src/github.com/elisescu/tty-server/tty-server /tty-server
 
 EXPOSE 5000
 EXPOSE 6543
-USER tty-server
 
-ENTRYPOINT ["/usr/bin/dumb-init", "--"]
-CMD ["/bin/sh", "-c", "/usr/bin/tty-server -web_address :5000 --sender_address :6543 -url $URL"]
+ENTRYPOINT [ "/tty-server" ]
+CMD [ "-web_address", ":5000", "--sender_address", ":6543" ]

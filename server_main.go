@@ -14,9 +14,21 @@ var MainLogger = logrus.New()
 func main() {
 	webAddress := flag.String("web_address", ":80", "The bind address for the web interface. This is the listening address for the web server that hosts the \"browser terminal\". You might want to change this if you don't want to use the port 80, or only bind the localhost.")
 	senderAddress := flag.String("sender_address", ":6543", "The bind address for the tty-share TLS connections. tty-share tool will connect to this address.")
-	url := flag.String("url", "http://localhost", "The public web URL the server will be accessible at. This will be sent back to the tty-share tool to display it to the user.")
+	url_arg := flag.String("url", "", "The public web URL the server will be accessible at. This will be sent back to the tty-share tool to display it to the user.")
 	frontendPath := flag.String("frontend_path", "", "The path to the frontend resources. By default, these resources are included in the server binary, so you only need this path if you don't want to use the bundled ones.")
 	flag.Parse()
+
+	var url string
+	url = *url_arg
+
+	if len(url) == 0 {
+		env_url, exists := os.LookupEnv("TTY_SERVER_URL")
+		if exists {
+			url = env_url
+		}else{
+			url = "http://localhost"
+		}
+	}
 
 	log := MainLogger
 	log.SetLevel(logrus.DebugLevel)
@@ -24,7 +36,7 @@ func main() {
 	config := TTYServerConfig{
 		WebAddress:       *webAddress,
 		TTYSenderAddress: *senderAddress,
-		ServerURL:        *url,
+		ServerURL:        url,
 		FrontendPath:     *frontendPath,
 	}
 
